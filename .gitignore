@@ -1,0 +1,14 @@
+# 서비스 계정 키 (절대 커밋 금지)
+*.json
+!package.json
+!package-lock.json
+
+# 의존성
+node_modules/
+
+# macOS
+.DS_Store
+
+# 환경변수
+.env
+.env.*

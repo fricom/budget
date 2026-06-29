@@ -1,0 +1,16 @@
+{
+  "name": "budget",
+  "version": "1.0.0",
+  "description": "구글 스프레드시트 기반 가계부를 단계적으로 디벨럽하는 프로젝트.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "googleapis": "^173.0.0"
+  }
+}
