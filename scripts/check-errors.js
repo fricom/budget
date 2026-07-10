@@ -16,24 +16,29 @@ async function main() {
     { name: '월 예산', range: 'A1:Z100' },
     { name: '2026', range: 'A1:S70' },
     { name: '2026 소비내역', range: 'A1:BV1010' },
-    { name: '유동자금내역', range: 'A1:E200' },
-    { name: '분석.그래프', range: 'A1:J60' },
+    { name: '비상금내역', range: 'A1:BZ40' },
+    { name: '분석.그래프', range: 'A1:V60' },
     { name: '2025', range: 'A1:S70' },
+    { name: '설정', range: 'A1:J30' },
   ];
   for (const tab of tabs) {
-    const res = await sheets.spreadsheets.values.get({
-      spreadsheetId: SPREADSHEET_ID,
-      range: tab.name + '!' + tab.range,
-    });
-    const errors = [];
-    (res.data.values || []).forEach((row, ri) => {
-      row.forEach((v, ci) => {
-        if (typeof v === 'string' && v.startsWith('#')) {
-          errors.push('R' + (ri + 1) + colName(ci) + ':' + v);
-        }
+    try {
+      const res = await sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID,
+        range: tab.name + '!' + tab.range,
       });
-    });
-    console.log(tab.name + ':', errors.length ? errors.join(', ') : '오류 없음');
+      const errors = [];
+      (res.data.values || []).forEach((row, ri) => {
+        row.forEach((v, ci) => {
+          if (typeof v === 'string' && v.startsWith('#')) {
+            errors.push('R' + (ri + 1) + colName(ci) + ':' + v);
+          }
+        });
+      });
+      console.log(tab.name + ':', errors.length ? errors.join(', ') : '오류 없음');
+    } catch (e) {
+      console.log(tab.name + ': 조회 실패 -', e.message);
+    }
   }
 }
 main().catch(e => console.error(e.message));
