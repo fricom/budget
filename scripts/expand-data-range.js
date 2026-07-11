@@ -18,7 +18,7 @@ const months = [
   { labelCol: 'BR', catCol: 'BS', sumCol: 'BU', budgetCol: 'Q' }, // 12월
 ];
 
-const CATEGORIES = ['생활', '자녀', '외식', '교통', '여가', '쇼핑', '의료'];
+const CATEGORIES = ['생활', '자녀', '외식', '교통', '여가', '쇼핑', '의료', '기타'];
 
 async function main() {
   const auth = new google.auth.GoogleAuth({ keyFile: KEY_FILE, scopes: ['https://www.googleapis.com/auth/spreadsheets'] });
