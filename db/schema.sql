@@ -198,14 +198,32 @@ alter table notification_settings enable row level security;
 alter table sheet_sync_settings enable row level security;
 alter table subscriptions enable row level security;
 
-create policy household_members_access on household_members
-  for select using (
-    exists (
-      select 1 from household_members hm
-      where hm.household_id = household_members.household_id
-        and hm.user_id = auth.uid()
-    )
+-- household_members 정책이 자기 테이블을 서브쿼리로 참조하면 Postgres RLS가
+-- 평가 중 그 서브쿼리에도 다시 RLS를 적용하려다 무한 재귀(42P17)에 빠짐.
+-- SECURITY DEFINER 함수로 감싸서 내부 조회가 RLS를 우회하게 하면 재귀 없이 해결됨.
+-- 모든 household_id 기반 정책이 이 함수를 공용으로 사용.
+create or replace function is_household_member(p_household_id uuid)
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select exists (
+    select 1 from household_members
+    where household_id = p_household_id
+      and user_id = auth.uid()
   );
+$$;
+
+grant execute on function is_household_member(uuid) to authenticated;
+
+-- select/insert/update 모두 "같은 가구의 기존 멤버"면 허용 (가구원 2~5 추가는
+-- 온보딩 시 이미 position 1(생성자)이 있는 상태에서 이루어지므로 이 정책으로 충분함).
+-- 단, 초대코드로 새 유저가 처음 슬롯을 claim하는 UPDATE는 이 정책을 통과 못 함(아직 멤버가 아니므로)
+-- → join_household() SECURITY DEFINER 함수로 처리 (db/functions.sql).
+create policy household_members_access on household_members
+  for all using (is_household_member(household_id));
 
 -- households/household_members는 최초 생성 시점에 RLS를 통과할 household_members 행이
 -- 아직 없는 부트스트랩 문제가 있음 (닭-달걀). 가구 생성 + 첫 가구원(생성자) 등록은
@@ -213,49 +231,29 @@ create policy household_members_access on household_members
 -- SECURITY DEFINER RPC 함수(예: create_household(name, member_name))로 노출할 것.
 -- 초대코드로 슬롯 claim(user_id NULL→본인 UPDATE)도 동일하게 RPC로 처리.
 create policy households_access on households
-  for select using (
-    exists (
-      select 1 from household_members hm
-      where hm.household_id = households.id
-        and hm.user_id = auth.uid()
-    )
-  );
+  for select using (is_household_member(id));
 
--- 아래 테이블들은 동일 패턴 반복 (select/insert/update 각각 household_members 존재 여부로 체크)
+-- 아래 테이블들은 동일 패턴 반복
 create policy fixed_costs_access on fixed_costs
-  for all using (
-    exists (select 1 from household_members hm where hm.household_id = fixed_costs.household_id and hm.user_id = auth.uid())
-  );
+  for all using (is_household_member(household_id));
 
 create policy goals_access on goals
-  for all using (
-    exists (select 1 from household_members hm where hm.household_id = goals.household_id and hm.user_id = auth.uid())
-  );
+  for all using (is_household_member(household_id));
 
 create policy expenses_access on expenses
-  for all using (
-    exists (select 1 from household_members hm where hm.household_id = expenses.household_id and hm.user_id = auth.uid())
-  );
+  for all using (is_household_member(household_id));
 
 create policy monthly_transfers_access on monthly_transfers
-  for all using (
-    exists (select 1 from household_members hm where hm.household_id = monthly_transfers.household_id and hm.user_id = auth.uid())
-  );
+  for all using (is_household_member(household_id));
 
 create policy notification_settings_access on notification_settings
-  for all using (
-    exists (select 1 from household_members hm where hm.household_id = notification_settings.household_id and hm.user_id = auth.uid())
-  );
+  for all using (is_household_member(household_id));
 
 create policy sheet_sync_settings_access on sheet_sync_settings
-  for all using (
-    exists (select 1 from household_members hm where hm.household_id = sheet_sync_settings.household_id and hm.user_id = auth.uid())
-  );
+  for all using (is_household_member(household_id));
 
 create policy subscriptions_access on subscriptions
-  for all using (
-    exists (select 1 from household_members hm where hm.household_id = subscriptions.household_id and hm.user_id = auth.uid())
-  );
+  for all using (is_household_member(household_id));
 
 -- expense_categories는 household_id가 항상 NULL(V1)이라 전체 공개 read-only로 충분
 alter table expense_categories enable row level security;
