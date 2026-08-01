@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
   },
   primaryButton: {
-    backgroundColor: '#3c87f7',
+    backgroundColor: '#4285f4',
     borderRadius: Spacing.two,
     paddingVertical: Spacing.three,
     alignItems: 'center',
