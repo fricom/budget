@@ -36,6 +36,7 @@
       "expo-image"
     ],
     "experiments": {
+      "baseUrl": "/budget",
       "typedRoutes": true,
       "reactCompiler": true
     }
