@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import * as Clipboard from 'expo-clipboard';
-import { router } from 'expo-router';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -40,7 +39,7 @@ type Step =
   | { name: 'join-pick'; householdName: string | null; members: InvitePreviewRow[] }
   | { name: 'join-success'; memberName: string };
 
-export function OnboardingFlow() {
+export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
   const theme = useTheme();
   const [step, setStep] = useState<Step>({ name: 'prologue' });
   const [memberCount, setMemberCount] = useState(3);
@@ -227,7 +226,7 @@ export function OnboardingFlow() {
               description="아래 코드를 가족에게 공유하면 같은 가계부에 연결할 수 있어요."
               theme={theme}
               inviteCode={step.inviteCode}
-              onDone={() => router.replace('/explore')}
+              onDone={onComplete}
             />
           )}
 
@@ -292,7 +291,7 @@ export function OnboardingFlow() {
               title={`${step.memberName}님, 가입 완료됐어요!`}
               description="이제 가족과 같은 가계부를 함께 관리해요."
               theme={theme}
-              onDone={() => router.replace('/explore')}
+              onDone={onComplete}
             />
           )}
         </View>

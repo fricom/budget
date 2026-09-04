@@ -6,22 +6,22 @@ import {
   TabTriggerSlotProps,
   TabListProps,
 } from 'expo-router/ui';
-import { usePathname } from 'expo-router';
 import { Pressable, useColorScheme, View, StyleSheet } from 'react-native';
 
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
 import { Colors, MaxContentWidth, Spacing } from '@/constants/theme';
+import { useHouseholdStatus } from '@/lib/household-context';
 
 export default function AppTabs() {
-  const pathname = usePathname();
+  const { status } = useHouseholdStatus();
 
   return (
     <Tabs>
       <TabSlot style={{ height: '100%' }} />
       <TabList asChild>
-        <CustomTabList hidden={pathname === '/'}>
+        <CustomTabList hidden={status !== 'ready'}>
           <TabTrigger name="home" href="/" asChild>
             <TabButton>홈</TabButton>
           </TabTrigger>
@@ -71,6 +71,7 @@ export function CustomTabList({ hidden, ...props }: TabListProps & { hidden?: bo
 const styles = StyleSheet.create({
   tabListContainer: {
     position: 'absolute',
+    bottom: 0,
     width: '100%',
     padding: Spacing.three,
     justifyContent: 'center',
