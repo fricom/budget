@@ -91,3 +91,39 @@ end;
 $$;
 
 grant execute on function join_household(text, uuid) to authenticated;
+
+-- 온보딩 최종 CTA에서만 호출. 단순히 가구원 행이 생긴 것과 설정 완료를 구분한다.
+create or replace function complete_onboarding()
+returns households
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_household households;
+begin
+  if auth.uid() is null then
+    raise exception 'authentication required';
+  end if;
+
+  update households h
+  set onboarding_step = 'complete',
+      onboarding_completed_at = coalesce(h.onboarding_completed_at, now())
+  where h.id = (
+    select hm.household_id
+    from household_members hm
+    where hm.user_id = auth.uid()
+    order by hm.created_at
+    limit 1
+  )
+  returning h.* into v_household;
+
+  if v_household is null then
+    raise exception 'household membership required';
+  end if;
+
+  return v_household;
+end;
+$$;
+
+grant execute on function complete_onboarding() to authenticated;

@@ -1,23 +1,27 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 
 import { useAuth } from '@/lib/auth-context';
+import { completeHouseholdOnboarding } from '@/lib/households';
 import { supabase } from '@/lib/supabase';
 
 type HouseholdStatus = 'loading' | 'onboarding' | 'ready';
 
 type HouseholdContextValue = {
   status: HouseholdStatus;
-  completeOnboarding: () => void;
+  resumeInviteCode: string | null;
+  completeOnboarding: () => Promise<void>;
 };
 
 const HouseholdContext = createContext<HouseholdContextValue>({
   status: 'loading',
-  completeOnboarding: () => undefined,
+  resumeInviteCode: null,
+  completeOnboarding: async () => undefined,
 });
 
 export function HouseholdProvider({ children }: { children: ReactNode }) {
   const { session, loading: authLoading } = useAuth();
   const [status, setStatus] = useState<HouseholdStatus>('loading');
+  const [resumeInviteCode, setResumeInviteCode] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -32,7 +36,7 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
       setStatus('loading');
       const { data, error } = await supabase
         .from('household_members')
-        .select('id')
+        .select('household_id, households(invite_code, onboarding_completed_at)')
         .eq('user_id', session.user.id)
         .limit(1);
 
@@ -42,7 +46,14 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
         setStatus('onboarding');
         return;
       }
-      setStatus(data.length > 0 ? 'ready' : 'onboarding');
+      const membership = data[0] as unknown as {
+        household_id: string;
+        households: { invite_code: string; onboarding_completed_at: string | null } | null;
+      } | undefined;
+      setResumeInviteCode(membership?.households?.onboarding_completed_at
+        ? null
+        : membership?.households?.invite_code ?? null);
+      setStatus(membership?.households?.onboarding_completed_at ? 'ready' : 'onboarding');
     }
 
     checkMembership();
@@ -51,10 +62,14 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
     };
   }, [authLoading, session?.user.id]);
 
-  const completeOnboarding = useCallback(() => setStatus('ready'), []);
+  const completeOnboarding = useCallback(async () => {
+    await completeHouseholdOnboarding();
+    setResumeInviteCode(null);
+    setStatus('ready');
+  }, []);
 
   return (
-    <HouseholdContext.Provider value={{ status, completeOnboarding }}>
+    <HouseholdContext.Provider value={{ status, resumeInviteCode, completeOnboarding }}>
       {children}
     </HouseholdContext.Provider>
   );

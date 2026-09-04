@@ -39,9 +39,14 @@ type Step =
   | { name: 'join-pick'; householdName: string | null; members: InvitePreviewRow[] }
   | { name: 'join-success'; memberName: string };
 
-export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
+export function OnboardingFlow({ initialInviteCode, onComplete }: {
+  initialInviteCode: string | null;
+  onComplete: () => Promise<void>;
+}) {
   const theme = useTheme();
-  const [step, setStep] = useState<Step>({ name: 'prologue' });
+  const [step, setStep] = useState<Step>(initialInviteCode
+    ? { name: 'household-success', inviteCode: initialInviteCode }
+    : { name: 'prologue' });
   const [memberCount, setMemberCount] = useState(3);
   const [names, setNames] = useState<string[]>(['', '', '']);
   const [inviteCodeInput, setInviteCodeInput] = useState('');
@@ -315,14 +320,28 @@ function SuccessPanel({ title, description, theme, inviteCode, onDone }: {
   description: string;
   theme: ReturnType<typeof useTheme>;
   inviteCode?: string;
-  onDone: () => void;
+  onDone: () => Promise<void>;
 }) {
   const [copied, setCopied] = useState(false);
+  const [completing, setCompleting] = useState(false);
+  const [completionError, setCompletionError] = useState<string | null>(null);
 
   async function copyInviteCode() {
     if (!inviteCode) return;
     await Clipboard.setStringAsync(inviteCode);
     setCopied(true);
+  }
+
+  async function finishOnboarding() {
+    setCompletionError(null);
+    setCompleting(true);
+    try {
+      await onDone();
+    } catch (e) {
+      setCompletionError(getErrorMessage(e));
+    } finally {
+      setCompleting(false);
+    }
   }
 
   return (
@@ -354,10 +373,13 @@ function SuccessPanel({ title, description, theme, inviteCode, onDone }: {
           </ThemedText>
         </View>
       )}
-      <Pressable style={({ pressed }) => [styles.primaryButton, styles.inlineButton, { backgroundColor: pressed ? theme.primaryPressed : theme.primary }]} onPress={onDone}>
-        <ThemedText type="smallBold" style={styles.primaryButtonText}>
-          {inviteCode ? '우리 가계 빈틈없이 굴리기' : '가계부 시작하기'}
-        </ThemedText>
+      <ErrorMessage message={completionError} />
+      <Pressable disabled={completing} style={({ pressed }) => [styles.primaryButton, styles.inlineButton, { backgroundColor: pressed ? theme.primaryPressed : theme.primary }]} onPress={finishOnboarding}>
+        {completing
+          ? <ActivityIndicator color="#FFFFFF" />
+          : <ThemedText type="smallBold" style={styles.primaryButtonText}>
+              {inviteCode ? '우리 가계 빈틈없이 굴리기' : '가계부 시작하기'}
+            </ThemedText>}
       </Pressable>
     </View>
   );

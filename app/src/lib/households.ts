@@ -69,3 +69,9 @@ export async function getHouseholdInviteCode(householdId: string) {
   if (error) throw error;
   return data.invite_code;
 }
+
+export async function completeHouseholdOnboarding() {
+  const { data, error } = await supabase.rpc('complete_onboarding').single();
+  if (error) throw error;
+  return data;
+}

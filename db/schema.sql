@@ -16,8 +16,13 @@ create table households (
   name text,                                   -- 선택적 표시용 이름 (예: "지원우혜네")
   invite_code text not null unique default encode(gen_random_bytes(6), 'hex'),
   created_by uuid not null references auth.users(id),
+  onboarding_step text not null default 'household-success',
+  onboarding_completed_at timestamptz,
   created_at timestamptz not null default now()
 );
+
+comment on column households.onboarding_step is '온보딩 중단 후 재개할 단계. 완료 전까지만 사용.';
+comment on column households.onboarding_completed_at is '모든 초기 설정 저장이 끝난 시각. NULL이면 홈 진입 불가.';
 
 -- 가구원 = 소비 태깅 대상(최대 5명) + 로그인 계정 매핑(user_id, nullable)
 -- 온보딩 시 이름만 입력된 "placeholder" 상태로 생성되고,
