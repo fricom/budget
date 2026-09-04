@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -14,12 +15,20 @@ const allowances = [
 ];
 
 const expenses = [
-  { date: '7/24', title: '진우 유산균', amount: '12,000원', tag: '🧸 자녀', tagColor: '#FFA133', tagBg: '#FFF1DE' },
-  { date: '7/23', title: '쿠팡 장', amount: '68,500원', tag: '🧺 생활', tagColor: '#33BFA9', tagBg: '#E3FAF7' },
-  { date: '7/22', title: '톨비', amount: '4,500원', tag: '🚗 교통', tagColor: '#8C7DF5', tagBg: '#F0EBFF' },
+  { date: '7/24', title: '진우 유산균', amount: '12,000원', member: '아이', tag: '🧸 자녀', tagColor: '#FFA133', tagBg: '#FFF1DE' },
+  { date: '7/23', title: '쿠팡 장', amount: '68,500원', member: '윤혜', tag: '🧺 생활', tagColor: '#33BFA9', tagBg: '#E3FAF7' },
+  { date: '7/22', title: '톨비', amount: '4,500원', member: '지원', tag: '🚗 교통', tagColor: '#8C7DF5', tagBg: '#F0EBFF' },
 ];
 
 export function HomeDashboard() {
+  const [selectedMember, setSelectedMember] = useState('전체');
+  const filteredExpenses = selectedMember === '전체'
+    ? expenses
+    : expenses.filter((expense) => expense.member === selectedMember);
+  const filteredAllowances = selectedMember === '전체'
+    ? allowances
+    : allowances.filter((allowance) => allowance.label === selectedMember);
+
   return (
     <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
       <View style={styles.hero}>
@@ -41,7 +50,7 @@ export function HomeDashboard() {
           <ThemedText style={styles.emergencyDanger}>이번 달 사용 50,000 (차량 수리)</ThemedText>
         </View>
         <ThemedText style={styles.allowanceLabel}>용돈</ThemedText>
-        {allowances.map((item) => <ProgressRow key={item.label} {...item} />)}
+        {filteredAllowances.map((item) => <ProgressRow key={item.label} {...item} />)}
       </View>
 
       <Pressable style={({ pressed }) => [styles.expenseButton, pressed && styles.pressed]}>
@@ -50,7 +59,7 @@ export function HomeDashboard() {
 
       <View style={styles.card}>
         <ThemedText style={styles.sectionTitle}>최근 지출 내역</ThemedText>
-        {expenses.map((expense) => (
+        {filteredExpenses.map((expense) => (
           <View key={`${expense.date}-${expense.title}`} style={styles.expenseRow}>
             <ThemedText style={styles.expenseDate}>{expense.date}</ThemedText>
             <ThemedText style={styles.expenseTitle}>{expense.title}</ThemedText>
@@ -60,16 +69,28 @@ export function HomeDashboard() {
             </View>
           </View>
         ))}
+        {filteredExpenses.length === 0 && (
+          <ThemedText style={styles.emptyText}>선택한 가구원의 최근 지출이 없어요.</ThemedText>
+        )}
         <ThemedText style={styles.link}>전체 내역 보기 →</ThemedText>
       </View>
 
       <View style={styles.card}>
         <ThemedText style={styles.sectionTitle}>가구원 필터</ThemedText>
         <View style={styles.chips}>
-          {['전체', '지원', '윤혜', '아이'].map((label, index) => (
-            <View key={label} style={[styles.chip, index === 0 && styles.chipSelected]}>
-              <ThemedText style={[styles.chipText, index === 0 && styles.chipTextSelected]}>{label}</ThemedText>
-            </View>
+          {['전체', '지원', '윤혜', '아이'].map((label) => (
+            <Pressable
+              accessibilityRole="radio"
+              accessibilityState={{ selected: selectedMember === label }}
+              key={label}
+              onPress={() => setSelectedMember(label)}
+              style={({ pressed }) => [
+                styles.chip,
+                selectedMember === label && styles.chipSelected,
+                pressed && styles.pressed,
+              ]}>
+              <ThemedText style={[styles.chipText, selectedMember === label && styles.chipTextSelected]}>{label}</ThemedText>
+            </Pressable>
           ))}
         </View>
       </View>
@@ -122,6 +143,7 @@ const styles = StyleSheet.create({
   tag: { borderRadius: 999, paddingHorizontal: 7, paddingVertical: 3 },
   tagText: { fontSize: 9, lineHeight: 12, fontWeight: '600' },
   link: { color: '#4285F4', fontSize: 11, lineHeight: 16, fontWeight: '500' },
+  emptyText: { color: '#5C636B', fontSize: 11, lineHeight: 18, textAlign: 'center', paddingVertical: 8 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { height: 32, borderRadius: 999, borderWidth: 1, borderColor: '#D6DADF', paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' },
   chipSelected: { borderColor: '#4285F4', backgroundColor: '#4285F4' },
