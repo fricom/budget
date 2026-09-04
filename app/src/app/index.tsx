@@ -10,14 +10,19 @@ import { useHouseholdStatus } from '@/lib/household-context';
 
 export default function HomeScreen() {
   const theme = useTheme();
-  const { status, resumeInviteCode, completeOnboarding } = useHouseholdStatus();
+  const { status, resumeInviteCode, resumeStep, onboardingDraft, completeOnboarding } = useHouseholdStatus();
 
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         {status === 'loading' && <ActivityIndicator style={styles.loader} color={theme.primary} />}
         {status === 'onboarding' && (
-          <OnboardingFlow initialInviteCode={resumeInviteCode} onComplete={completeOnboarding} />
+          <OnboardingFlow
+            initialInviteCode={resumeInviteCode}
+            initialStep={resumeStep}
+            initialDraft={onboardingDraft}
+            onComplete={completeOnboarding}
+          />
         )}
         {status === 'ready' && <HomeDashboard />}
       </SafeAreaView>

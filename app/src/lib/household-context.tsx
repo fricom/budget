@@ -9,12 +9,16 @@ type HouseholdStatus = 'loading' | 'onboarding' | 'ready';
 type HouseholdContextValue = {
   status: HouseholdStatus;
   resumeInviteCode: string | null;
+  resumeStep: string | null;
+  onboardingDraft: Record<string, number>;
   completeOnboarding: () => Promise<void>;
 };
 
 const HouseholdContext = createContext<HouseholdContextValue>({
   status: 'loading',
   resumeInviteCode: null,
+  resumeStep: null,
+  onboardingDraft: {},
   completeOnboarding: async () => undefined,
 });
 
@@ -22,6 +26,8 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
   const { session, loading: authLoading } = useAuth();
   const [status, setStatus] = useState<HouseholdStatus>('loading');
   const [resumeInviteCode, setResumeInviteCode] = useState<string | null>(null);
+  const [resumeStep, setResumeStep] = useState<string | null>(null);
+  const [onboardingDraft, setOnboardingDraft] = useState<Record<string, number>>({});
 
   useEffect(() => {
     let active = true;
@@ -36,7 +42,7 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
       setStatus('loading');
       const { data, error } = await supabase
         .from('household_members')
-        .select('household_id, households(invite_code, onboarding_completed_at)')
+        .select('household_id, households(invite_code, onboarding_step, onboarding_data, onboarding_completed_at)')
         .eq('user_id', session.user.id)
         .limit(1);
 
@@ -48,11 +54,13 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
       }
       const membership = data[0] as unknown as {
         household_id: string;
-        households: { invite_code: string; onboarding_completed_at: string | null } | null;
+        households: { invite_code: string; onboarding_step: string; onboarding_data: Record<string, number>; onboarding_completed_at: string | null } | null;
       } | undefined;
       setResumeInviteCode(membership?.households?.onboarding_completed_at
         ? null
         : membership?.households?.invite_code ?? null);
+      setResumeStep(membership?.households?.onboarding_completed_at ? null : membership?.households?.onboarding_step ?? null);
+      setOnboardingDraft(membership?.households?.onboarding_data ?? {});
       setStatus(membership?.households?.onboarding_completed_at ? 'ready' : 'onboarding');
     }
 
@@ -65,11 +73,13 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
   const completeOnboarding = useCallback(async () => {
     await completeHouseholdOnboarding();
     setResumeInviteCode(null);
+    setResumeStep(null);
+    setOnboardingDraft({});
     setStatus('ready');
   }, []);
 
   return (
-    <HouseholdContext.Provider value={{ status, resumeInviteCode, completeOnboarding }}>
+    <HouseholdContext.Provider value={{ status, resumeInviteCode, resumeStep, onboardingDraft, completeOnboarding }}>
       {children}
     </HouseholdContext.Provider>
   );

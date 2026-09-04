@@ -17,11 +17,13 @@ create table households (
   invite_code text not null unique default encode(gen_random_bytes(6), 'hex'),
   created_by uuid not null references auth.users(id),
   onboarding_step text not null default 'household-success',
+  onboarding_data jsonb not null default '{}'::jsonb,
   onboarding_completed_at timestamptz,
   created_at timestamptz not null default now()
 );
 
 comment on column households.onboarding_step is '온보딩 중단 후 재개할 단계. 완료 전까지만 사용.';
+comment on column households.onboarding_data is '완료 전 단계별 입력 초안. 최종 확정 후에도 재개 감사용으로 유지.';
 comment on column households.onboarding_completed_at is '모든 초기 설정 저장이 끝난 시각. NULL이면 홈 진입 불가.';
 
 -- 가구원 = 소비 태깅 대상(최대 5명) + 로그인 계정 매핑(user_id, nullable)

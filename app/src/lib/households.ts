@@ -75,3 +75,15 @@ export async function completeHouseholdOnboarding() {
   if (error) throw error;
   return data;
 }
+
+export type OnboardingDraft = Record<string, number>;
+
+export async function saveOnboardingProgress(step: string, data: OnboardingDraft) {
+  const { error } = await supabase.rpc('save_onboarding_progress', { p_step: step, p_data: data });
+  if (error) throw error;
+}
+
+export async function finalizeOnboarding(data: OnboardingDraft) {
+  const { error } = await supabase.rpc('finalize_onboarding', { p_data: data });
+  if (error) throw error;
+}
