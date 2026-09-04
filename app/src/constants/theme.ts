@@ -18,7 +18,7 @@ export const Colors = {
     primaryPressed: '#3275E4',
     primarySoft: '#E8F1FE',
     accent: '#E7B75B',
-    border: '#D8DDE5',
+    border: '#D6DADF',
     danger: '#B84444',
     dangerSoft: '#FBE9E7',
   },
