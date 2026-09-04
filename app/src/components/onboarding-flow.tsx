@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import * as Clipboard from 'expo-clipboard';
+import { router } from 'expo-router';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -124,6 +125,12 @@ export function OnboardingFlow() {
     { backgroundColor: pressed ? theme.primaryPressed : theme.primary },
   ];
 
+  function openJoinFlow() {
+    setError(null);
+    setInviteCodeInput('');
+    setStep({ name: 'join-code' });
+  }
+
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView
@@ -136,7 +143,7 @@ export function OnboardingFlow() {
         ]}>
           {step.name === 'prologue' && (
             <View style={styles.prologueBody}>
-              <ThemedText type="title" style={styles.prologueTitle}>버짓 앱에 오신 걸 환영해요</ThemedText>
+              <ThemedText type="title" style={styles.prologueTitle}>버짓 앱에 오신 걸{`\n`}환영해요</ThemedText>
               <ThemedText type="small" themeColor="textSecondary" style={styles.prologueCopy}>
                 버짓앱은 가족 단위로 예산을 관리하는 가계부 서비스예요.{`\n\n`}
                 버짓앱을 사용하기 위해서는 다음과 같은 초기 정보가 있을 때 빈틈없는 가계운영이 가능해요!{`\n\n`}
@@ -144,9 +151,17 @@ export function OnboardingFlow() {
                 · 보험비: 월 평균 보험비{`\n\n`}
                 지금 입력하지 않아도 추후 입력으로 세팅 가능해요.
               </ThemedText>
-              <Pressable style={({ pressed }) => [...primaryButtonStyle({ pressed }), styles.inlineButton]} onPress={() => setStep({ name: 'household-count' })}>
-                <ThemedText type="smallBold" style={styles.primaryButtonText}>시작할게요</ThemedText>
-              </Pressable>
+              <View style={styles.prologueActions}>
+                <Pressable style={({ pressed }) => [...primaryButtonStyle({ pressed }), styles.inlineButton]} onPress={() => setStep({ name: 'household-count' })}>
+                  <ThemedText type="smallBold" style={styles.primaryButtonText}>시작할게요</ThemedText>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={openJoinFlow}
+                  style={({ pressed }) => [styles.secondaryButton, { borderColor: theme.border }, pressed && styles.pressed]}>
+                  <ThemedText type="smallBold" style={{ color: theme.primary }}>초대코드로 참여하기</ThemedText>
+                </Pressable>
+              </View>
             </View>
           )}
 
@@ -212,7 +227,7 @@ export function OnboardingFlow() {
               description="아래 코드를 가족에게 공유하면 같은 가계부에 연결할 수 있어요."
               theme={theme}
               inviteCode={step.inviteCode}
-              onDone={() => setStep({ name: 'prologue' })}
+              onDone={() => router.replace('/explore')}
             />
           )}
 
@@ -237,6 +252,9 @@ export function OnboardingFlow() {
               <ErrorMessage message={error} />
               <Pressable style={({ pressed }) => [...primaryButtonStyle({ pressed }), styles.inlineButton]} onPress={submitInviteCode} disabled={busy}>
                 {busy ? <ActivityIndicator color="#FFFFFF" /> : <ThemedText type="smallBold" style={styles.primaryButtonText}>확인</ThemedText>}
+              </Pressable>
+              <Pressable style={styles.backLink} onPress={() => setStep({ name: 'prologue' })}>
+                <ThemedText type="small" themeColor="textSecondary">처음으로 돌아가기</ThemedText>
               </Pressable>
             </View>
           )}
@@ -274,7 +292,7 @@ export function OnboardingFlow() {
               title={`${step.memberName}님, 가입 완료됐어요!`}
               description="이제 가족과 같은 가계부를 함께 관리해요."
               theme={theme}
-              onDone={() => setStep({ name: 'prologue' })}
+              onDone={() => router.replace('/explore')}
             />
           )}
         </View>
@@ -351,6 +369,7 @@ const styles = StyleSheet.create({
   scrollContent: { flexGrow: 1, paddingHorizontal: 16, paddingTop: 70, paddingBottom: 30 },
   card: { flex: 1, width: '100%', borderRadius: 16, paddingHorizontal: 22, paddingTop: 32, paddingBottom: 28, shadowColor: '#1A264D', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 24, elevation: 2, overflow: 'hidden' },
   prologueBody: { flex: 1, gap: 20 },
+  prologueActions: { gap: 10 },
   prologueTitle: { fontSize: 30, lineHeight: 36, fontWeight: '800', letterSpacing: -0.6 },
   prologueCopy: { lineHeight: 17, fontWeight: '400' },
   stepBody: { flex: 1, gap: 20 },
@@ -361,6 +380,8 @@ const styles = StyleSheet.create({
   primaryButton: { minHeight: 48, borderRadius: 10, paddingHorizontal: 20, marginTop: 'auto', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.two },
   primaryButtonText: { color: '#FFFFFF' },
   inlineButton: { marginTop: 0 },
+  secondaryButton: { minHeight: 48, borderRadius: 10, borderWidth: 1, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
+  backLink: { minHeight: 40, alignItems: 'center', justifyContent: 'center' },
   countGrid: { flexDirection: 'row', gap: 10 },
   countChip: { height: 32, minWidth: 32, borderWidth: 1, borderRadius: 9999, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' },
   fields: { gap: 16 },
