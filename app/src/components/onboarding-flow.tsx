@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import * as Clipboard from 'expo-clipboard';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -299,6 +300,14 @@ function SuccessPanel({ title, description, theme, inviteCode, onDone }: {
   inviteCode?: string;
   onDone: () => void;
 }) {
+  const [copied, setCopied] = useState(false);
+
+  async function copyInviteCode() {
+    if (!inviteCode) return;
+    await Clipboard.setStringAsync(inviteCode);
+    setCopied(true);
+  }
+
   return (
     <View style={[styles.stepBody, styles.successPanel]}>
       <View style={[styles.successIcon, { backgroundColor: '#E8F6EF' }]}>
@@ -311,12 +320,27 @@ function SuccessPanel({ title, description, theme, inviteCode, onDone }: {
       {inviteCode && (
         <View style={[styles.inviteCodeBox, { backgroundColor: theme.background, borderColor: theme.border }]}>
           <ThemedText type="small" themeColor="textSecondary">우리 가족 초대코드</ThemedText>
-          <ThemedText style={[styles.inviteCode, { color: theme.primary }]} selectable>{inviteCode}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">길게 눌러 복사할 수 있어요</ThemedText>
+          <View style={styles.inviteCodeRow}>
+            <ThemedText style={[styles.inviteCode, { color: theme.primary }]} selectable>{inviteCode}</ThemedText>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="초대코드 복사"
+              hitSlop={10}
+              onPress={copyInviteCode}
+              style={({ pressed }) => [styles.copyButton, pressed && styles.pressed]}>
+              <View style={[styles.copyIconBack, { borderColor: theme.primary }]} />
+              <View style={[styles.copyIconFront, { borderColor: theme.primary, backgroundColor: theme.background }]} />
+            </Pressable>
+          </View>
+          <ThemedText type="small" themeColor="textSecondary">
+            {copied ? '초대코드를 복사했어요!' : '길게 누르거나 아이콘을 눌러 복사해요'}
+          </ThemedText>
         </View>
       )}
       <Pressable style={({ pressed }) => [styles.primaryButton, styles.inlineButton, { backgroundColor: pressed ? theme.primaryPressed : theme.primary }]} onPress={onDone}>
-        <ThemedText type="smallBold" style={styles.primaryButtonText}>홈으로 가기</ThemedText>
+        <ThemedText type="smallBold" style={styles.primaryButtonText}>
+          {inviteCode ? '우리 가계 빈틈없이 굴리기' : '가계부 시작하기'}
+        </ThemedText>
       </Pressable>
     </View>
   );
@@ -353,7 +377,11 @@ const styles = StyleSheet.create({
   successTitle: { fontSize: 20, lineHeight: 24, fontWeight: '800' },
   centerCopy: { alignItems: 'center' },
   centerText: { textAlign: 'center' },
-  inviteCodeBox: { width: '100%', borderRadius: 20, borderWidth: 1, borderStyle: 'dashed', padding: Spacing.four, alignItems: 'center', gap: Spacing.two },
-  inviteCode: { fontFamily: Fonts.mono, fontSize: 28, lineHeight: 36, fontWeight: '800', letterSpacing: 4 },
+  inviteCodeBox: { width: '100%', borderRadius: 16, borderWidth: 1, borderStyle: 'dashed', paddingHorizontal: 16, paddingVertical: 24, alignItems: 'center', gap: 12 },
+  inviteCodeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
+  inviteCode: { fontFamily: Fonts.mono, fontSize: 24, lineHeight: 32, fontWeight: '800', letterSpacing: 1 },
+  copyButton: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
+  copyIconBack: { position: 'absolute', width: 16, height: 18, borderWidth: 2, borderRadius: 2, left: 6, top: 5 },
+  copyIconFront: { position: 'absolute', width: 16, height: 18, borderWidth: 2, borderRadius: 2, left: 10, top: 9 },
   pressed: { opacity: 0.65 },
 });
