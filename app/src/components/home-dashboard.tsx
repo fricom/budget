@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { useAuth } from '@/lib/auth-context';
 
 const progressItems = [
   { label: '생활비', detail: '450,000 / 800,000', progress: 0.56 },
@@ -21,6 +22,7 @@ const expenses = [
 ];
 
 export function HomeDashboard() {
+  const { session, signOut } = useAuth();
   const [selectedMember, setSelectedMember] = useState('전체');
   const filteredExpenses = selectedMember === '전체'
     ? expenses
@@ -31,6 +33,17 @@ export function HomeDashboard() {
 
   return (
     <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
+      <View style={styles.accountRow}>
+        <ThemedText style={styles.accountEmail} numberOfLines={1}>
+          {session?.user.email}
+        </ThemedText>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => signOut().catch((error) => console.error('sign out failed', error))}
+          style={({ pressed }) => [styles.signOutButton, pressed && styles.pressed]}>
+          <ThemedText style={styles.signOutLabel}>로그아웃</ThemedText>
+        </Pressable>
+      </View>
       <View style={styles.hero}>
         <ThemedText style={styles.heroMeta}>7월 · 7/24  ·  D-7</ThemedText>
         <ThemedText style={styles.heroLabel}>이번 달 여유예산 잔액</ThemedText>
@@ -114,6 +127,10 @@ function ProgressRow({ label, detail, progress }: { label: string; detail: strin
 
 const styles = StyleSheet.create({
   page: { gap: 18, paddingHorizontal: 15, paddingTop: 44, paddingBottom: 110 },
+  accountRow: { minHeight: 30, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 10 },
+  accountEmail: { maxWidth: 210, color: '#5C636B', fontSize: 10, lineHeight: 14 },
+  signOutButton: { borderRadius: 999, borderWidth: 1, borderColor: '#D6DADF', paddingHorizontal: 10, paddingVertical: 5 },
+  signOutLabel: { color: '#5C636B', fontSize: 10, lineHeight: 14, fontWeight: '600' },
   hero: { backgroundColor: '#4285F4', borderRadius: 16, paddingHorizontal: 15, paddingTop: 14, paddingBottom: 18, gap: 6, shadowColor: '#1740D9', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 28, elevation: 8 },
   heroMeta: { color: '#D9E5FF', fontSize: 11, lineHeight: 15, fontWeight: '500' },
   heroLabel: { color: '#D9E5FF', fontSize: 11, lineHeight: 15, fontWeight: '500' },

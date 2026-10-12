@@ -3,16 +3,33 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 
 import { supabase } from '@/lib/supabase';
 
+function getEmailRedirectTo() {
+  if (typeof window === 'undefined') return undefined;
+  return `${window.location.origin}/budget/`;
+}
+
+type SignUpResult = {
+  requiresEmailConfirmation: boolean;
+};
+
 type AuthContextValue = {
   session: Session | null;
   loading: boolean;
+  isAnonymous: boolean;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<SignUpResult>;
+  signOut: () => Promise<void>;
 };
 
-const AuthContext = createContext<AuthContextValue>({ session: null, loading: true });
+const AuthContext = createContext<AuthContextValue>({
+  session: null,
+  loading: true,
+  isAnonymous: false,
+  signIn: async () => undefined,
+  signUp: async () => ({ requiresEmailConfirmation: false }),
+  signOut: async () => undefined,
+});
 
-// 임시 부트스트랩: 실제 로그인 화면(이메일/소셜) 만들기 전까지, 세션이 없으면
-// Supabase 익명 로그인으로 auth.uid()를 확보해서 온보딩 플로우를 테스트 가능하게 함.
-// 나중에 실제 로그인 화면이 생기면 anonymous -> 실계정 업그레이드(linkIdentity)로 전환.
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -30,12 +47,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const { data: anon, error } = await supabase.auth.signInAnonymously();
       if (mounted) {
-        if (error) {
-          console.error('anonymous sign-in failed', error);
-        }
-        setSession(anon?.session ?? null);
+        setSession(null);
         setLoading(false);
       }
     }
@@ -52,7 +65,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  return <AuthContext.Provider value={{ session, loading }}>{children}</AuthContext.Provider>;
+  async function signIn(email: string, password: string) {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    setSession(data.session);
+  }
+
+  async function signUp(email: string, password: string): Promise<SignUpResult> {
+    // 이전 버전에서 만든 익명 세션이 있으면 같은 auth.uid()에 자격 증명을 붙인다.
+    // 이미 끝낸 온보딩과 가구 데이터가 그대로 유지된다.
+    if (session?.user.is_anonymous) {
+      const { data, error } = await supabase.auth.updateUser(
+        { email, password },
+        { emailRedirectTo: getEmailRedirectTo() },
+      );
+      if (error) throw error;
+
+      const { data: refreshed } = await supabase.auth.getSession();
+      setSession(refreshed.session);
+      return { requiresEmailConfirmation: !data.user.email_confirmed_at };
+    }
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: getEmailRedirectTo() },
+    });
+    if (error) throw error;
+    setSession(data.session);
+    return { requiresEmailConfirmation: !data.session };
+  }
+
+  async function signOut() {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+    setSession(null);
+  }
+
+  return (
+    <AuthContext.Provider
+      value={{
+        session,
+        loading,
+        isAnonymous: session?.user.is_anonymous === true,
+        signIn,
+        signUp,
+        signOut,
+      }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

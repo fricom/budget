@@ -12,16 +12,18 @@ import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
 import { Colors, MaxContentWidth, Spacing } from '@/constants/theme';
+import { useAuth } from '@/lib/auth-context';
 import { useHouseholdStatus } from '@/lib/household-context';
 
 export default function AppTabs() {
   const { status } = useHouseholdStatus();
+  const { session, isAnonymous } = useAuth();
 
   return (
     <Tabs>
       <TabSlot style={{ height: '100%' }} />
       <TabList asChild>
-        <CustomTabList hidden={status !== 'ready'}>
+        <CustomTabList hidden={status !== 'ready' || !session || isAnonymous}>
           <TabTrigger name="home" href="/" asChild>
             <TabButton>홈</TabButton>
           </TabTrigger>

@@ -1,22 +1,30 @@
 import { ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AuthScreen } from '@/components/auth-screen';
 import { HomeDashboard } from '@/components/home-dashboard';
 import { OnboardingFlow } from '@/components/onboarding-flow';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useAuth } from '@/lib/auth-context';
 import { useHouseholdStatus } from '@/lib/household-context';
 
 export default function HomeScreen() {
   const theme = useTheme();
+  const { session, loading: authLoading, isAnonymous } = useAuth();
   const { status, resumeInviteCode, resumeStep, onboardingDraft, completeOnboarding } = useHouseholdStatus();
+  const requiresAuth = !session || isAnonymous;
 
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        {status === 'loading' && <ActivityIndicator style={styles.loader} color={theme.primary} />}
-        {status === 'onboarding' && (
+        {authLoading && <ActivityIndicator style={styles.loader} color={theme.primary} />}
+        {!authLoading && requiresAuth && <AuthScreen />}
+        {!authLoading && !requiresAuth && status === 'loading' && (
+          <ActivityIndicator style={styles.loader} color={theme.primary} />
+        )}
+        {!authLoading && !requiresAuth && status === 'onboarding' && (
           <OnboardingFlow
             initialInviteCode={resumeInviteCode}
             initialStep={resumeStep}
@@ -24,7 +32,7 @@ export default function HomeScreen() {
             onComplete={completeOnboarding}
           />
         )}
-        {status === 'ready' && <HomeDashboard />}
+        {!authLoading && !requiresAuth && status === 'ready' && <HomeDashboard />}
       </SafeAreaView>
     </ThemedView>
   );

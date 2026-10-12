@@ -14,6 +14,6 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
     storage: isBrowser ? AsyncStorage : undefined,
     autoRefreshToken: isBrowser,
     persistSession: isBrowser,
-    detectSessionInUrl: false,
+    detectSessionInUrl: isBrowser,
   },
 });
