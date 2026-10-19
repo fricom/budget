@@ -1,11 +1,56 @@
 import type { Session } from '@supabase/supabase-js';
+import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { Platform } from 'react-native';
 
 import { supabase } from '@/lib/supabase';
+
+WebBrowser.maybeCompleteAuthSession();
 
 function getEmailRedirectTo() {
   if (typeof window === 'undefined') return undefined;
   return `${window.location.origin}/budget/`;
+}
+
+function getOAuthRedirectTo() {
+  if (Platform.OS === 'web') return getEmailRedirectTo();
+  return Linking.createURL('auth/callback');
+}
+
+function getOAuthParams(url: string) {
+  const parsedUrl = new URL(url);
+  const params = new URLSearchParams(parsedUrl.search);
+  const hashParams = new URLSearchParams(parsedUrl.hash.replace(/^#/, ''));
+
+  hashParams.forEach((value, key) => params.set(key, value));
+  return params;
+}
+
+async function completeNativeOAuth(url: string, redirectTo: string) {
+  const result = await WebBrowser.openAuthSessionAsync(url, redirectTo);
+  if (result.type !== 'success') return;
+
+  const params = getOAuthParams(result.url);
+  const oauthError = params.get('error_description') ?? params.get('error');
+  if (oauthError) throw new Error(oauthError);
+
+  const accessToken = params.get('access_token');
+  const refreshToken = params.get('refresh_token');
+  if (accessToken && refreshToken) {
+    const { error } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+    if (error) throw error;
+    return;
+  }
+
+  const code = params.get('code');
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) throw error;
+  }
 }
 
 type SignUpResult = {
@@ -17,6 +62,7 @@ type AuthContextValue = {
   loading: boolean;
   isAnonymous: boolean;
   signIn: (email: string, password: string) => Promise<void>;
+  signInWithKakao: () => Promise<void>;
   signUp: (email: string, password: string) => Promise<SignUpResult>;
   signOut: () => Promise<void>;
 };
@@ -26,6 +72,7 @@ const AuthContext = createContext<AuthContextValue>({
   loading: true,
   isAnonymous: false,
   signIn: async () => undefined,
+  signInWithKakao: async () => undefined,
   signUp: async () => ({ requiresEmailConfirmation: false }),
   signOut: async () => undefined,
 });
@@ -71,6 +118,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(data.session);
   }
 
+  async function signInWithKakao() {
+    const redirectTo = getOAuthRedirectTo();
+    if (!redirectTo) throw new Error('OAuth redirect URL is unavailable.');
+
+    const options = {
+      redirectTo,
+      skipBrowserRedirect: Platform.OS !== 'web',
+    };
+    const { data, error } = session?.user.is_anonymous
+      ? await supabase.auth.linkIdentity({ provider: 'kakao', options })
+      : await supabase.auth.signInWithOAuth({ provider: 'kakao', options });
+
+    if (error) throw error;
+    if (Platform.OS !== 'web' && data.url) {
+      await completeNativeOAuth(data.url, redirectTo);
+    }
+  }
+
   async function signUp(email: string, password: string): Promise<SignUpResult> {
     // 이전 버전에서 만든 익명 세션이 있으면 같은 auth.uid()에 자격 증명을 붙인다.
     // 이미 끝낸 온보딩과 가구 데이터가 그대로 유지된다.
@@ -109,6 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         isAnonymous: session?.user.is_anonymous === true,
         signIn,
+        signInWithKakao,
         signUp,
         signOut,
       }}>

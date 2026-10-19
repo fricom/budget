@@ -1,9 +1,11 @@
+import { Image } from 'expo-image';
 import { useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   TextInput,
   View,
@@ -15,33 +17,80 @@ import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth-context';
 
 type AuthMode = 'signIn' | 'signUp';
+type Submission = 'email' | 'kakao' | null;
 
 function getAuthErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : '';
+  const normalizedMessage = message.toLowerCase();
 
   if (message.includes('Invalid login credentials')) return '이메일 또는 비밀번호를 확인해 주세요.';
   if (message.includes('Email not confirmed')) return '이메일 인증을 완료한 뒤 로그인해 주세요.';
   if (message.includes('User already registered')) return '이미 가입된 이메일이에요. 로그인해 주세요.';
-  if (message.toLowerCase().includes('password')) return '비밀번호는 6자 이상 입력해 주세요.';
+  if (normalizedMessage.includes('identity_already_exists')) {
+    return '이미 다른 계정에 연결된 카카오 계정이에요.';
+  }
+  if (normalizedMessage.includes('manual linking') || normalizedMessage.includes('manual_linking')) {
+    return '현재 데이터 연결 설정이 아직 준비되지 않았어요.';
+  }
+  if (normalizedMessage.includes('provider') && normalizedMessage.includes('enabled')) {
+    return '카카오 로그인이 아직 준비되지 않았어요.';
+  }
+  if (normalizedMessage.includes('password')) return '비밀번호는 6자 이상 입력해 주세요.';
   return message || '요청을 처리하지 못했어요. 잠시 후 다시 시도해 주세요.';
+}
+
+function AgreementCheckbox({
+  checked,
+  label,
+  onPress,
+}: {
+  checked: boolean;
+  label: string;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+
+  return (
+    <Pressable
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked }}
+      onPress={onPress}
+      style={({ pressed }) => [styles.agreementRow, pressed && styles.pressed]}>
+      <View
+        style={[
+          styles.checkbox,
+          { borderColor: checked ? theme.primary : '#8B929B' },
+          checked && { backgroundColor: theme.primary },
+        ]}>
+        {checked && <ThemedText style={styles.checkmark}>✓</ThemedText>}
+      </View>
+      <ThemedText style={styles.agreementLabel}>{label}</ThemedText>
+    </Pressable>
+  );
 }
 
 export function AuthScreen() {
   const theme = useTheme();
-  const { isAnonymous, signIn, signUp } = useAuth();
+  const { isAnonymous, signIn, signInWithKakao, signUp } = useAuth();
   const [mode, setMode] = useState<AuthMode>(isAnonymous ? 'signUp' : 'signIn');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [submission, setSubmission] = useState<Submission>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const canSubmit = email.trim().length > 0 && password.length >= 6 && !submitting;
+  const canSubmit = email.trim().length > 0 && password.length >= 6 && submission === null;
 
   async function submit() {
     if (!canSubmit) return;
+    if (!termsAccepted || !privacyAccepted) {
+      setErrorMessage('필수 약관에 모두 동의해 주세요.');
+      return;
+    }
 
-    setSubmitting(true);
+    setSubmission('email');
     setErrorMessage(null);
     setNotice(null);
 
@@ -57,7 +106,27 @@ export function AuthScreen() {
     } catch (error) {
       setErrorMessage(getAuthErrorMessage(error));
     } finally {
-      setSubmitting(false);
+      setSubmission(null);
+    }
+  }
+
+  async function submitKakao() {
+    if (submission !== null) return;
+    if (!termsAccepted || !privacyAccepted) {
+      setErrorMessage('필수 약관에 모두 동의해 주세요.');
+      return;
+    }
+
+    setSubmission('kakao');
+    setErrorMessage(null);
+    setNotice(null);
+
+    try {
+      await signInWithKakao();
+    } catch (error) {
+      setErrorMessage(getAuthErrorMessage(error));
+    } finally {
+      setSubmission(null);
     }
   }
 
@@ -71,151 +140,235 @@ export function AuthScreen() {
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.screen}>
-      <View style={styles.content}>
-        <View style={styles.brandRow}>
-          <View style={[styles.brandDot, { backgroundColor: theme.primary }]} />
-          <ThemedText type="smallBold">BUDGET</ThemedText>
-        </View>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}>
+        <View style={[styles.card, { backgroundColor: theme.backgroundElement }]}>
+          <View style={styles.brandRow}>
+            <Image
+              accessibilityIgnoresInvertColors
+              source={require('../../assets/images/auth-brand-mark.svg')}
+              style={styles.brandMark}
+            />
+            <ThemedText style={styles.brandLabel}>BUDGET</ThemedText>
+          </View>
 
-        <View style={styles.intro}>
-          <ThemedText style={styles.title}>우리 가족의 돈 루틴을{`\n`}이어서 관리해요</ThemedText>
-          <ThemedText themeColor="textSecondary" style={styles.description}>
-            계정으로 로그인하면 이 기기에서는 다음부터 바로 홈에서 시작합니다.
-          </ThemedText>
-        </View>
-
-        {isAnonymous && (
-          <View style={[styles.savedDataCard, { backgroundColor: theme.primarySoft }]}>
-            <ThemedText type="smallBold" style={{ color: theme.primary }}>저장된 설정이 있어요</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              회원가입하면 현재 브라우저의 가구 설정과 온보딩 기록을 그대로 계정에 연결해 드려요.
+          <View style={styles.intro}>
+            <ThemedText style={styles.title}>카카오로 빠르게 로그인하고{`\n`}바로 홈에서 시작해요</ThemedText>
+            <ThemedText themeColor="textSecondary" style={styles.description}>
+              한 번 로그인하면 다음부터 온보딩 없이{`\n`}우리 가족의 예산 화면으로 바로 돌아갈 수 있어요.
             </ThemedText>
           </View>
-        )}
 
-        <View style={[styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-          <View style={[styles.modeTabs, { backgroundColor: theme.background }]}>
-            {([
-              ['signIn', '로그인'],
-              ['signUp', '회원가입'],
-            ] as const).map(([value, label]) => (
-              <Pressable
-                accessibilityRole="tab"
-                accessibilityState={{ selected: mode === value }}
-                key={value}
-                onPress={() => changeMode(value)}
-                style={[
-                  styles.modeTab,
-                  mode === value && { backgroundColor: theme.backgroundElement },
-                ]}>
-                <ThemedText
-                  type="smallBold"
-                  themeColor={mode === value ? 'text' : 'textSecondary'}>
-                  {label}
-                </ThemedText>
-              </Pressable>
-            ))}
+          <View style={styles.agreements}>
+            <AgreementCheckbox
+              checked={termsAccepted}
+              label="이용약관 동의 (필수)"
+              onPress={() => {
+                setTermsAccepted((value) => !value);
+                setErrorMessage(null);
+              }}
+            />
+            <AgreementCheckbox
+              checked={privacyAccepted}
+              label="개인정보 처리방침 동의 (필수)"
+              onPress={() => {
+                setPrivacyAccepted((value) => !value);
+                setErrorMessage(null);
+              }}
+            />
           </View>
-
-          <View style={styles.fields}>
-            <View style={styles.field}>
-              <ThemedText type="smallBold">이메일</ThemedText>
-              <TextInput
-                autoCapitalize="none"
-                autoComplete="email"
-                editable={!submitting}
-                keyboardType="email-address"
-                onChangeText={setEmail}
-                onSubmitEditing={submit}
-                placeholder="name@example.com"
-                placeholderTextColor={theme.textSecondary}
-                returnKeyType="next"
-                style={[
-                  styles.input,
-                  { color: theme.text, backgroundColor: theme.background, borderColor: theme.border },
-                ]}
-                value={email}
-              />
-            </View>
-
-            <View style={styles.field}>
-              <ThemedText type="smallBold">비밀번호</ThemedText>
-              <TextInput
-                autoCapitalize="none"
-                autoComplete={mode === 'signIn' ? 'current-password' : 'new-password'}
-                editable={!submitting}
-                onChangeText={setPassword}
-                onSubmitEditing={submit}
-                placeholder="6자 이상 입력"
-                placeholderTextColor={theme.textSecondary}
-                returnKeyType="done"
-                secureTextEntry
-                style={[
-                  styles.input,
-                  { color: theme.text, backgroundColor: theme.background, borderColor: theme.border },
-                ]}
-                value={password}
-              />
-            </View>
-          </View>
-
-          {errorMessage && (
-            <View style={[styles.feedback, { backgroundColor: theme.dangerSoft }]}>
-              <ThemedText type="small" style={{ color: theme.danger }}>{errorMessage}</ThemedText>
-            </View>
-          )}
-          {notice && (
-            <View style={[styles.feedback, { backgroundColor: theme.primarySoft }]}>
-              <ThemedText type="small" style={{ color: theme.primary }}>{notice}</ThemedText>
-            </View>
-          )}
 
           <Pressable
+            accessibilityLabel="카카오로 3초 만에 시작하기"
             accessibilityRole="button"
-            disabled={!canSubmit}
-            onPress={submit}
+            disabled={submission !== null}
+            onPress={submitKakao}
             style={({ pressed }) => [
-              styles.submitButton,
-              { backgroundColor: theme.primary },
-              !canSubmit && styles.disabled,
-              pressed && canSubmit && styles.pressed,
+              styles.kakaoButton,
+              submission !== null && styles.disabled,
+              pressed && submission === null && styles.pressed,
             ]}>
-            {submitting ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <ThemedText type="smallBold" style={styles.submitLabel}>
-                {mode === 'signIn'
-                  ? '로그인하고 시작하기'
-                  : isAnonymous
-                    ? '현재 데이터에 계정 연결하기'
-                    : '계정 만들고 시작하기'}
-              </ThemedText>
-            )}
+              {submission === 'kakao' ? (
+                <ActivityIndicator color="#191919" />
+              ) : (
+                <>
+                  <Image
+                    accessibilityIgnoresInvertColors
+                    source={require('../../assets/images/kakao-login.svg')}
+                    style={styles.kakaoIcon}
+                  />
+                  <ThemedText style={styles.kakaoLabel}>카카오로 3초 만에 시작하기</ThemedText>
+                </>
+              )}
           </Pressable>
+
+            <View style={styles.dividerRow}>
+              <View style={[styles.divider, { backgroundColor: theme.border }]} />
+              <ThemedText style={styles.dividerLabel} themeColor="textSecondary">또는</ThemedText>
+              <View style={[styles.divider, { backgroundColor: theme.border }]} />
+            </View>
+
+            <View style={styles.fields}>
+              <View style={styles.field}>
+                <ThemedText style={styles.fieldLabel}>이메일</ThemedText>
+                <TextInput
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  editable={submission === null}
+                  keyboardType="email-address"
+                  onChangeText={setEmail}
+                  onSubmitEditing={submit}
+                  placeholder="name@example.com"
+                  placeholderTextColor={theme.textSecondary}
+                  returnKeyType="next"
+                  style={[
+                    styles.input,
+                    { color: theme.text, backgroundColor: theme.background, borderColor: theme.border },
+                  ]}
+                  value={email}
+                />
+              </View>
+
+              <View style={styles.field}>
+                <ThemedText style={styles.fieldLabel}>비밀번호</ThemedText>
+                <TextInput
+                  autoCapitalize="none"
+                  autoComplete={mode === 'signIn' ? 'current-password' : 'new-password'}
+                  editable={submission === null}
+                  onChangeText={setPassword}
+                  onSubmitEditing={submit}
+                  placeholder="6자 이상 입력"
+                  placeholderTextColor={theme.textSecondary}
+                  returnKeyType="done"
+                  secureTextEntry
+                  style={[
+                    styles.input,
+                    { color: theme.text, backgroundColor: theme.background, borderColor: theme.border },
+                  ]}
+                  value={password}
+                />
+              </View>
+            </View>
+
+            {errorMessage && (
+              <View style={[styles.feedback, { backgroundColor: theme.dangerSoft }]}>
+                <ThemedText style={[styles.feedbackText, { color: theme.danger }]}>{errorMessage}</ThemedText>
+              </View>
+            )}
+            {notice && (
+              <View style={[styles.feedback, { backgroundColor: theme.primarySoft }]}>
+                <ThemedText style={[styles.feedbackText, { color: theme.primary }]}>{notice}</ThemedText>
+              </View>
+            )}
+
+            <Pressable
+              accessibilityRole="button"
+              disabled={!canSubmit}
+              onPress={submit}
+              style={({ pressed }) => [
+                styles.submitButton,
+                { backgroundColor: theme.primary },
+                !canSubmit && styles.disabled,
+                pressed && canSubmit && styles.pressed,
+              ]}>
+              {submission === 'email' ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <ThemedText style={styles.submitLabel}>
+                  {mode === 'signIn'
+                    ? '이메일로 로그인'
+                    : isAnonymous
+                      ? '현재 데이터에 계정 연결하기'
+                      : '이메일로 계정 만들기'}
+                </ThemedText>
+              )}
+            </Pressable>
+
+            <View style={styles.accountSwitchRow}>
+              <ThemedText style={styles.accountQuestion} themeColor="textSecondary">
+                {mode === 'signIn' ? '계정이 없나요?' : '이미 계정이 있나요?'}
+              </ThemedText>
+              <Pressable
+                accessibilityRole="button"
+                disabled={submission !== null}
+                onPress={() => changeMode(mode === 'signIn' ? 'signUp' : 'signIn')}>
+                <ThemedText style={[styles.accountLink, { color: theme.textAccent }]}>
+                  {mode === 'signIn' ? '회원가입' : '로그인'}
+                </ThemedText>
+              </Pressable>
+            </View>
+
+          <ThemedText themeColor="textSecondary" style={styles.footer}>
+            기존에 저장한 가구 설정도 로그인 후 그대로 이어져요.
+          </ThemedText>
         </View>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, justifyContent: 'center' },
-  content: { padding: Spacing.four, gap: Spacing.four },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  brandDot: { width: 9, height: 9, borderRadius: 5 },
+  screen: { flex: 1 },
+  scrollContent: {
+    flexGrow: 1,
+    width: '100%',
+    alignItems: 'center',
+    paddingTop: 70,
+    paddingBottom: 30,
+    paddingHorizontal: Spacing.three,
+  },
+  card: {
+    width: '100%',
+    maxWidth: 343,
+    minHeight: 712,
+    borderRadius: 16,
+    paddingTop: 32,
+    paddingHorizontal: 22,
+    paddingBottom: 28,
+    gap: 12,
+    alignItems: 'center',
+    alignSelf: 'center',
+  },
+  brandRow: { height: 22, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.two },
+  brandMark: { width: 9, height: 9 },
+  brandLabel: { fontSize: 14, lineHeight: 22, fontWeight: '600' },
   intro: { gap: Spacing.two },
-  title: { fontSize: 30, lineHeight: 38, fontWeight: '800', letterSpacing: -0.7 },
-  description: { fontSize: 14, lineHeight: 21 },
-  savedDataCard: { borderRadius: 18, padding: Spacing.three, gap: Spacing.one },
-  card: { borderWidth: 1, borderRadius: 24, padding: Spacing.three, gap: Spacing.three },
-  modeTabs: { flexDirection: 'row', borderRadius: 14, padding: 3 },
-  modeTab: { flex: 1, minHeight: 40, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  fields: { gap: Spacing.three },
-  field: { gap: Spacing.two },
-  input: { height: 50, borderRadius: 14, borderWidth: 1, paddingHorizontal: Spacing.three, fontSize: 15 },
+  title: { fontSize: 24, lineHeight: 32, fontWeight: '700', letterSpacing: -1 },
+  description: { fontSize: 14, lineHeight: 22, fontWeight: '400' },
+  agreements: { width: '100%', gap: Spacing.two },
+  agreementRow: { height: 20, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  checkbox: { width: 20, height: 20, borderRadius: 6, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  checkmark: { color: '#FFFFFF', fontSize: 14, lineHeight: 17, fontWeight: '700' },
+  agreementLabel: { flex: 1, fontSize: 13, lineHeight: 20, fontWeight: '400' },
+  kakaoButton: {
+    width: '100%',
+    height: 48,
+    borderRadius: 10,
+    backgroundColor: '#FEE500',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 10,
+  },
+  kakaoLabel: { color: '#191919', fontSize: 14, lineHeight: 22, fontWeight: '600' },
+  kakaoIcon: { width: 18, height: 18 },
+  dividerRow: { width: '100%', height: 18, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: 4 },
+  divider: { flex: 1, height: StyleSheet.hairlineWidth },
+  dividerLabel: { fontSize: 12, lineHeight: 20, fontWeight: '400' },
+  fields: { width: '100%', gap: 12 },
+  field: { gap: 6 },
+  fieldLabel: { fontSize: 13, lineHeight: 20, fontWeight: '600' },
+  input: { height: 48, borderRadius: 10, borderWidth: 1, paddingHorizontal: Spacing.three, fontSize: 14, lineHeight: 22 },
   feedback: { borderRadius: 12, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },
-  submitButton: { minHeight: 50, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  submitLabel: { color: '#FFFFFF' },
+  feedbackText: { fontSize: 12, lineHeight: 18 },
+  submitButton: { width: '100%', height: 48, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  submitLabel: { color: '#FFFFFF', fontSize: 14, lineHeight: 22, fontWeight: '600' },
+  accountSwitchRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: Spacing.two },
+  accountQuestion: { fontSize: 12, lineHeight: 20, fontWeight: '400' },
+  accountLink: { fontSize: 12, lineHeight: 20, fontWeight: '600' },
+  footer: { width: '100%', textAlign: 'center', fontSize: 12, lineHeight: 20, fontWeight: '400' },
   disabled: { opacity: 0.45 },
   pressed: { opacity: 0.78 },
 });
