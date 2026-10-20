@@ -8,6 +8,9 @@ import { supabase } from '@/lib/supabase';
 
 WebBrowser.maybeCompleteAuthSession();
 
+const KAKAO_PROVIDER = 'custom:kakao-no-email';
+const KAKAO_SCOPES = 'openid profile_nickname profile_image';
+
 function getEmailRedirectTo() {
   if (typeof window === 'undefined') return undefined;
   const isGitHubPages = window.location.pathname === '/budget'
@@ -139,14 +142,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const options = {
       redirectTo,
       skipBrowserRedirect: Platform.OS !== 'web',
-      // Kakao account email requires additional Kakao app permission.
-      // Budget identifies users by Supabase auth.uid(), so only request the
-      // profile fields currently used by the product.
-      scopes: 'profile_nickname profile_image',
+      scopes: KAKAO_SCOPES,
     };
     const { data, error } = session?.user.is_anonymous
-      ? await supabase.auth.linkIdentity({ provider: 'kakao', options })
-      : await supabase.auth.signInWithOAuth({ provider: 'kakao', options });
+      ? await supabase.auth.linkIdentity({ provider: KAKAO_PROVIDER, options })
+      : await supabase.auth.signInWithOAuth({ provider: KAKAO_PROVIDER, options });
 
     if (error) throw error;
     if (Platform.OS !== 'web' && data.url) {

@@ -3,12 +3,31 @@
 ## Current login methods
 
 - Email and password login remains available.
-- Kakao login requests only `profile_nickname` and `profile_image`.
+- Kakao login uses the Supabase custom OIDC provider
+  `custom:kakao-no-email` and requests only `openid`, `profile_nickname`, and
+  `profile_image`.
 - Kakao account email is intentionally not requested because it requires
   additional Kakao app permission and Budget uses `auth.uid()` as the user
   identifier.
-- The Supabase Kakao provider must keep **Allow users without an email**
-  enabled.
+- The custom provider must keep **Allow users without an email** enabled.
+
+The built-in Supabase Kakao provider cannot be used for this flow. Its current
+implementation always adds `account_email` to the authorization request, and
+client-provided scopes are appended instead of replacing the defaults. This
+causes Kakao `KOE205` for a non-Biz Kakao app even when Supabase allows users
+without an email.
+
+### Custom Kakao OIDC provider configuration
+
+- Provider identifier: `custom:kakao-no-email`
+- Configuration method: Auto-discovery (OIDC)
+- Issuer: `https://kauth.kakao.com`
+- Scopes: `openid`, `profile_nickname`, `profile_image`
+- Email optional: enabled
+- PKCE: enabled
+- Client ID: Kakao REST API key
+- Client secret: Kakao Login client secret
+- Kakao Developers: Kakao Login and OpenID Connect both enabled
 
 ## Known effects of email-less Kakao accounts
 
