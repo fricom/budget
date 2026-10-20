@@ -139,6 +139,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const options = {
       redirectTo,
       skipBrowserRedirect: Platform.OS !== 'web',
+      // Kakao account email requires additional Kakao app permission.
+      // Budget identifies users by Supabase auth.uid(), so only request the
+      // profile fields currently used by the product.
+      scopes: 'profile_nickname profile_image',
     };
     const { data, error } = session?.user.is_anonymous
       ? await supabase.auth.linkIdentity({ provider: 'kakao', options })
