@@ -71,7 +71,7 @@ function AgreementCheckbox({
 
 export function AuthScreen() {
   const theme = useTheme();
-  const { isAnonymous, signIn, signInWithKakao, signUp } = useAuth();
+  const { isAnonymous, kakaoEnabled, signIn, signInWithKakao, signUp } = useAuth();
   const [mode, setMode] = useState<AuthMode>(isAnonymous ? 'signUp' : 'signIn');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -82,6 +82,7 @@ export function AuthScreen() {
   const [notice, setNotice] = useState<string | null>(null);
 
   const canSubmit = email.trim().length > 0 && password.length >= 6 && submission === null;
+  const kakaoUnavailable = kakaoEnabled === false;
 
   async function submit() {
     if (!canSubmit) return;
@@ -112,6 +113,10 @@ export function AuthScreen() {
 
   async function submitKakao() {
     if (submission !== null) return;
+    if (kakaoUnavailable) {
+      setErrorMessage('카카오 로그인이 아직 준비되지 않았어요.');
+      return;
+    }
     if (!termsAccepted || !privacyAccepted) {
       setErrorMessage('필수 약관에 모두 동의해 주세요.');
       return;
@@ -183,12 +188,12 @@ export function AuthScreen() {
           <Pressable
             accessibilityLabel="카카오로 3초 만에 시작하기"
             accessibilityRole="button"
-            disabled={submission !== null}
+            disabled={submission !== null || kakaoUnavailable}
             onPress={submitKakao}
             style={({ pressed }) => [
               styles.kakaoButton,
-              submission !== null && styles.disabled,
-              pressed && submission === null && styles.pressed,
+              (submission !== null || kakaoUnavailable) && styles.disabled,
+              pressed && submission === null && !kakaoUnavailable && styles.pressed,
             ]}>
               {submission === 'kakao' ? (
                 <ActivityIndicator color="#191919" />
@@ -199,10 +204,18 @@ export function AuthScreen() {
                     source={require('../../assets/images/kakao-login.svg')}
                     style={styles.kakaoIcon}
                   />
-                  <ThemedText style={styles.kakaoLabel}>카카오로 3초 만에 시작하기</ThemedText>
+                  <ThemedText style={styles.kakaoLabel}>
+                    {kakaoUnavailable ? '카카오 로그인 준비 중' : '카카오로 3초 만에 시작하기'}
+                  </ThemedText>
                 </>
               )}
           </Pressable>
+
+            {kakaoUnavailable && (
+              <ThemedText style={styles.providerNotice} themeColor="textSecondary">
+                관리자 설정이 완료되면 바로 사용할 수 있어요.
+              </ThemedText>
+            )}
 
             <View style={styles.dividerRow}>
               <View style={[styles.divider, { backgroundColor: theme.border }]} />
@@ -354,6 +367,7 @@ const styles = StyleSheet.create({
   },
   kakaoLabel: { color: '#191919', fontSize: 14, lineHeight: 22, fontWeight: '600' },
   kakaoIcon: { width: 18, height: 18 },
+  providerNotice: { width: '100%', fontSize: 12, lineHeight: 18, textAlign: 'center' },
   dividerRow: { width: '100%', height: 18, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: 4 },
   divider: { flex: 1, height: StyleSheet.hairlineWidth },
   dividerLabel: { fontSize: 12, lineHeight: 20, fontWeight: '400' },

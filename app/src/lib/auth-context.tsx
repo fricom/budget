@@ -10,7 +10,9 @@ WebBrowser.maybeCompleteAuthSession();
 
 function getEmailRedirectTo() {
   if (typeof window === 'undefined') return undefined;
-  return `${window.location.origin}/budget/`;
+  const isGitHubPages = window.location.pathname === '/budget'
+    || window.location.pathname.startsWith('/budget/');
+  return `${window.location.origin}${isGitHubPages ? '/budget/' : '/'}`;
 }
 
 function getOAuthRedirectTo() {
@@ -60,6 +62,7 @@ type SignUpResult = {
 type AuthContextValue = {
   session: Session | null;
   loading: boolean;
+  kakaoEnabled: boolean | null;
   isAnonymous: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signInWithKakao: () => Promise<void>;
@@ -70,6 +73,7 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue>({
   session: null,
   loading: true,
+  kakaoEnabled: null,
   isAnonymous: false,
   signIn: async () => undefined,
   signInWithKakao: async () => undefined,
@@ -80,6 +84,7 @@ const AuthContext = createContext<AuthContextValue>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [kakaoEnabled, setKakaoEnabled] = useState<boolean | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -101,6 +106,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     bootstrap();
+    getKakaoProviderAvailability().then((available) => {
+      if (mounted) setKakaoEnabled(available);
+    });
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession);
@@ -119,6 +127,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signInWithKakao() {
+    const kakaoAvailable = kakaoEnabled ?? await getKakaoProviderAvailability();
+    setKakaoEnabled(kakaoAvailable);
+    if (kakaoAvailable === false) {
+      throw new Error('Unsupported provider: provider is not enabled');
+    }
+
     const redirectTo = getOAuthRedirectTo();
     if (!redirectTo) throw new Error('OAuth redirect URL is unavailable.');
 
@@ -172,6 +186,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         session,
         loading,
+        kakaoEnabled,
         isAnonymous: session?.user.is_anonymous === true,
         signIn,
         signInWithKakao,
@@ -181,6 +196,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
+}
+
+async function getKakaoProviderAvailability(): Promise<boolean | null> {
+  const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  if (!supabaseUrl || !supabaseKey) return false;
+
+  try {
+    const response = await fetch(`${supabaseUrl}/auth/v1/settings`, {
+      headers: { apikey: supabaseKey },
+    });
+    if (!response.ok) return null;
+
+    const settings = await response.json() as { external?: { kakao?: boolean } };
+    return settings.external?.kakao === true;
+  } catch {
+    return null;
+  }
 }
 
 export function useAuth() {
