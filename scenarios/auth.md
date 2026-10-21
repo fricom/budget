@@ -15,7 +15,7 @@ The built-in Supabase Kakao provider cannot be used for this flow. Its current
 implementation always adds `account_email` to the authorization request, and
 client-provided scopes are appended instead of replacing the defaults. This
 causes Kakao `KOE205` for a non-Biz Kakao app even when Supabase allows users
-without an email.
+without an email. It may be disabled after the custom provider is working.
 
 ### Custom Kakao OIDC provider configuration
 

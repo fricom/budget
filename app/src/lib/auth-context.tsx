@@ -214,7 +214,12 @@ async function getKakaoProviderAvailability(): Promise<boolean | null> {
     if (!response.ok) return null;
 
     const settings = await response.json() as { external?: { kakao?: boolean } };
-    return settings.external?.kakao === true;
+    if (settings.external?.kakao === true) return true;
+
+    // Supabase does not expose custom OAuth providers from the public settings
+    // endpoint. An unavailable built-in Kakao provider therefore does not mean
+    // that the custom Kakao OIDC provider is unavailable.
+    return null;
   } catch {
     return null;
   }
