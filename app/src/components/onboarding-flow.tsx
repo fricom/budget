@@ -151,7 +151,7 @@ export function OnboardingFlow({ initialInviteCode, initialStep, initialDraft, o
     const goalTotal = ['living', 'savings', 'pension', 'emergency', 'allowance']
       .reduce((sum, key) => sum + (data[key] ?? 0), 0);
     if (totalIncome <= 0) {
-      setError('가구 소득을 입력해주세요.');
+      setError('가구의 한 달 예상 수입을 입력해주세요.');
       return;
     }
     if (goalTotal !== availableBudget) {
@@ -290,7 +290,7 @@ export function OnboardingFlow({ initialInviteCode, initialStep, initialDraft, o
             <View style={styles.stepBody}>
               <View style={styles.copyBlock}>
                 <ThemedText type="subtitle" style={styles.stepTitle}>몇 분이 함께 사나요?</ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">가구원은 소비 태깅용으로 최대 5명까지 등록 가능해요. 소득/예산 관리는 처음 등록한 2명으로 제한돼요.</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">가구원은 소비 태깅용으로 최대 5명까지 등록 가능해요. 수입/예산 관리는 처음 등록한 2명으로 제한돼요.</ThemedText>
               </View>
               <View style={styles.countGrid}>
                 {[1, 2, 3, 4, 5].map((count) => {
@@ -355,17 +355,17 @@ export function OnboardingFlow({ initialInviteCode, initialStep, initialDraft, o
           {step.name === 'income' && (
             <View style={styles.stepBody}>
               <StepCopy
-                title={'가구원별 월 평균 소득을\n입력해주세요'}
-                description="이 값으로 생활비/저축/노후자금/비상금/용돈 비율을 제안해드려요. 소득관리 대상은 처음 등록한 2명까지예요."
+                title={'우리 가족의 한 달 예상 수입을\n알려주세요'}
+                description="정확하지 않아도 괜찮아요. 매달 들어오는 금액을 대략 입력하면 예산 비율을 제안해드려요. 나중에 수정할 수 있어요."
               />
-              <MoneyField label="가구원 1님 월 평균 소득" placeholder="예: 4,500,000원" value={draft.income_1} onChangeText={(value) => setMoney('income_1', value)} inputStyle={inputStyle} />
-              {memberCount > 1 && <MoneyField label="가구원 2님 월 평균 소득" placeholder="예: 3,800,000원" value={draft.income_2} onChangeText={(value) => setMoney('income_2', value)} inputStyle={inputStyle} />}
+              <MoneyField label={`${names[0]?.trim() || '가구원 1'}님의 한 달 예상 수입`} placeholder="예: 4,500,000원" value={draft.income_1} onChangeText={(value) => setMoney('income_1', value)} inputStyle={inputStyle} />
+              {memberCount > 1 && <MoneyField label={`${names[1]?.trim() || '가구원 2'}님의 한 달 예상 수입`} placeholder="예: 3,800,000원" value={draft.income_2} onChangeText={(value) => setMoney('income_2', value)} inputStyle={inputStyle} />}
               <View style={[styles.totalCard, { backgroundColor: theme.primary }]}>
-                <ThemedText style={styles.totalLabel}>우리 가족 월 평균 소득</ThemedText>
+                <ThemedText style={styles.totalLabel}>우리 가족의 한 달 예상 수입</ThemedText>
                 <ThemedText style={styles.totalAmount}>{formatWon(totalIncome)}</ThemedText>
               </View>
               <ErrorMessage message={error} />
-              <NextButton label="다음" busy={busy} theme={theme} onPress={() => totalIncome > 0 ? saveAndGo('housing') : setError('월 평균 소득을 입력해주세요.')} />
+              <NextButton label="다음" busy={busy} theme={theme} onPress={() => totalIncome > 0 ? saveAndGo('housing') : setError('한 달 예상 수입을 입력해주세요.')} />
             </View>
           )}
 
@@ -401,7 +401,7 @@ export function OnboardingFlow({ initialInviteCode, initialStep, initialDraft, o
                   </View>
                 ))}
               </View>
-              <ThemedText style={styles.helperText}>여유예산(=총소득−고정비) {formatWon(availableBudget)} 안에서 4:4:2:1:1 비율로 자동 배분돼요.</ThemedText>
+              <ThemedText style={styles.helperText}>여유예산(=총수입−고정비) {formatWon(availableBudget)} 안에서 4:4:2:1:1 비율로 자동 배분돼요.</ThemedText>
               <ErrorMessage message={error} />
               <NextButton label="시작해볼까요" busy={busy} theme={theme} onPress={beginGoals} />
             </View>
@@ -413,7 +413,7 @@ export function OnboardingFlow({ initialInviteCode, initialStep, initialDraft, o
               savings: { title: '저축 세팅', description: '저축을 얼마 목표로 하고 계신가요? 여유예산의 1/3을 제안드려요.', placeholder: '예: 800,000원', next: 'pension' as const },
               pension: { title: '노후자금 세팅', description: '노후자금은 얼마를 목표로 하고 계신가요? 여유예산의 1/6을 제안드려요.', placeholder: '예: 400,000원', next: 'emergency' as const },
               emergency: { title: '비상금 세팅', description: '병원비·차량관리·여행비·가족경조사·지인경조사를 비상금에서 관리해요. 여유예산의 1/12을 제안드려요.', placeholder: '예: 200,000원', next: 'allowance' as const },
-              allowance: { title: '용돈 세팅', description: '작고 소중한 내 용돈. 여유예산의 1/12로 잡았어요. 소득관리 대상 2명에게 소득 비례로 기본 배분돼요.', placeholder: '예: 200,000원', next: null },
+              allowance: { title: '용돈 세팅', description: '작고 소중한 내 용돈. 여유예산의 1/12로 잡았어요. 수입을 입력한 2명에게 수입 비례로 기본 배분돼요.', placeholder: '예: 200,000원', next: null },
             }[step.name as 'living' | 'savings' | 'pension' | 'emergency' | 'allowance'];
             const key = step.name as 'living' | 'savings' | 'pension' | 'emergency' | 'allowance';
             return (
@@ -662,7 +662,7 @@ const styles = StyleSheet.create({
   fieldGroup: { gap: 6 },
   input: { height: 48, borderWidth: 1, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 14, fontSize: 14, fontFamily: Fonts.sans, fontWeight: '500' },
   totalCard: { width: '100%', borderRadius: 10, padding: 16, gap: 4, shadowColor: '#2563EB', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 18 },
-  totalLabel: { color: '#D9E5FF', fontSize: 12, lineHeight: 16, fontWeight: '500' },
+  totalLabel: { color: '#FFFFFF', fontSize: 12, lineHeight: 16, fontWeight: '500' },
   totalAmount: { color: '#FFFFFF', fontSize: 24, lineHeight: 30, fontWeight: '700' },
   allocationBar: { width: '100%', height: 40, flexDirection: 'row', gap: 8 },
   allocationPiece: { minWidth: 25, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },

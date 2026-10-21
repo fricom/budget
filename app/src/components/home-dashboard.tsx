@@ -50,7 +50,7 @@ export function HomeDashboard() {
         <ThemedText style={styles.heroLabel}>이번 달 여유예산 잔액</ThemedText>
         <ThemedText style={styles.heroAmount}>1,240,000원</ThemedText>
         <View style={styles.heroSummary}>
-          <ThemedText style={styles.heroSummaryText}>총소득 8,300,000</ThemedText>
+          <ThemedText style={styles.heroSummaryText}>한 달 수입 8,300,000</ThemedText>
           <ThemedText style={styles.heroSummaryText}>고정비 1,670,000</ThemedText>
         </View>
       </View>
@@ -136,11 +136,11 @@ const styles = StyleSheet.create({
   signOutButton: { borderRadius: 999, borderWidth: 1, borderColor: '#D6DADF', paddingHorizontal: 10, paddingVertical: 5 },
   signOutLabel: { color: '#5C636B', fontSize: 10, lineHeight: 14, fontWeight: '600' },
   hero: { backgroundColor: '#315EF8', borderRadius: 16, paddingHorizontal: 20, paddingTop: 20, paddingBottom: 24, gap: 10, shadowColor: '#101828', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.12, shadowRadius: 20, elevation: 8 },
-  heroMeta: { color: '#D9E5FF', fontSize: 13, lineHeight: 20, fontWeight: '500' },
-  heroLabel: { color: '#D9E5FF', fontSize: 13, lineHeight: 20, fontWeight: '500' },
+  heroMeta: { color: '#FFFFFF', fontSize: 13, lineHeight: 20, fontWeight: '500' },
+  heroLabel: { color: '#FFFFFF', fontSize: 13, lineHeight: 20, fontWeight: '500' },
   heroAmount: { color: '#FFFFFF', fontSize: 40, lineHeight: 48, fontWeight: '600', letterSpacing: -2 },
   heroSummary: { flexDirection: 'row', gap: 16 },
-  heroSummaryText: { color: '#D9E5FF', fontSize: 12, lineHeight: 20 },
+  heroSummaryText: { color: '#FFFFFF', fontSize: 12, lineHeight: 20 },
   card: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 20, gap: 16, shadowColor: '#101828', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 2 },
   sectionTitle: { color: '#16191D', fontSize: 16, lineHeight: 24, fontWeight: '600' },
   progressBlock: { gap: 6 },
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
   progressTrack: { height: 12, borderRadius: 999, backgroundColor: '#ECEEF1', overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 999, backgroundColor: '#7694FA' },
   emergencyCard: { backgroundColor: '#315EF8', borderRadius: 16, padding: 20, gap: 6 },
-  emergencyLabel: { color: '#23774D', fontSize: 13, lineHeight: 20, fontWeight: '600' },
+  emergencyLabel: { color: '#FFFFFF', fontSize: 13, lineHeight: 20, fontWeight: '600' },
   emergencyAmount: { color: '#FFFFFF', fontSize: 24, lineHeight: 32, fontWeight: '700', letterSpacing: -1 },
   emergencyCopy: { color: '#FFFFFF', fontSize: 12, lineHeight: 20 },
   emergencyDanger: { color: '#FFFFFF', fontSize: 12, lineHeight: 20, fontWeight: '600' },
