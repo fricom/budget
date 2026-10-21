@@ -356,10 +356,10 @@ export function OnboardingFlow({ initialInviteCode, initialStep, initialDraft, o
             <View style={styles.stepBody}>
               <StepCopy
                 title={'우리 가족의 한 달 예상 수입을\n알려주세요'}
-                description="필수 입력 · 수입이 있는 가구원 한 명 이상 입력해주세요. 정확하지 않아도 괜찮고, 나중에 수정할 수 있어요."
+                description="정확하지 않아도 괜찮아요. 매달 들어오는 금액을 대략 입력하면 예산 비율을 제안해드려요. 나중에 수정할 수 있어요."
               />
-              <MoneyField label={`${names[0]?.trim() || '가구원 1'}님의 한 달 예상 수입`} placeholder="예: 3,000,000원" value={draft.income_1} onChangeText={(value) => setMoney('income_1', value)} inputStyle={inputStyle} />
-              {memberCount > 1 && <MoneyField label={`${names[1]?.trim() || '가구원 2'}님의 한 달 예상 수입`} placeholder="예: 2,000,000원" value={draft.income_2} onChangeText={(value) => setMoney('income_2', value)} inputStyle={inputStyle} />}
+              <MoneyField label={`${names[0]?.trim() || '가구원 1'}님의 한 달 예상 수입 (${memberCount > 1 ? '둘 중 하나 필수' : '필수'})`} placeholder="예: 3,000,000원" value={draft.income_1} onChangeText={(value) => setMoney('income_1', value)} inputStyle={inputStyle} />
+              {memberCount > 1 && <MoneyField label={`${names[1]?.trim() || '가구원 2'}님의 한 달 예상 수입 (둘 중 하나 필수)`} placeholder="예: 2,000,000원" value={draft.income_2} onChangeText={(value) => setMoney('income_2', value)} inputStyle={inputStyle} />}
               <View style={[styles.totalCard, { backgroundColor: theme.primary }]}>
                 <ThemedText style={styles.totalLabel}>우리 가족의 한 달 예상 수입</ThemedText>
                 <ThemedText style={styles.totalAmount}>{formatWon(totalIncome)}</ThemedText>
@@ -371,7 +371,7 @@ export function OnboardingFlow({ initialInviteCode, initialStep, initialDraft, o
 
           {step.name === 'housing' && (
             <View style={styles.stepBody}>
-              <StepCopy title="주거비를 세팅해볼까요?" description="선택 입력 · 해당하는 항목만 입력해주세요. 없는 항목은 비워두어도 돼요." />
+              <StepCopy title="주거비를 세팅해볼까요?" description="해당하는 항목만 입력해주세요. 없는 항목은 비워두어도 돼요." />
               <MoneyField label="대출금 월 상환액 (선택)" placeholder="예: 800,000원" value={draft.loan_payment} onChangeText={(value) => setMoney('loan_payment', value)} inputStyle={inputStyle} />
               <MoneyField label="주거 관리비 (선택)" placeholder="예: 200,000원" value={draft.housing_fee} onChangeText={(value) => setMoney('housing_fee', value)} inputStyle={inputStyle} />
               <MoneyField label="통신비 (선택)" placeholder="예: 100,000원" value={draft.telecom_fee} onChangeText={(value) => setMoney('telecom_fee', value)} inputStyle={inputStyle} />
@@ -384,7 +384,7 @@ export function OnboardingFlow({ initialInviteCode, initialStep, initialDraft, o
 
           {step.name === 'insurance' && (
             <View style={styles.stepBody}>
-              <StepCopy title="이제 보험비예요" description="선택 입력 · 보험료를 내는 경우 가구 전체의 한 달 금액을 입력해주세요. 비워두고 나중에 추가할 수 있어요." />
+              <StepCopy title="이제 보험비예요" description="보험료를 내는 경우 가구 전체의 한 달 금액을 입력해주세요. 비워두고 나중에 추가할 수 있어요." />
               <MoneyField label="가구 전체 한 달 보험비 (선택)" placeholder="예: 300,000원" value={draft.insurance_total} onChangeText={(value) => setMoney('insurance_total', value)} inputStyle={inputStyle} />
               <ErrorMessage message={error} />
               <NextButton label="고정비 세팅 완료" busy={busy} theme={theme} onPress={() => saveAndGo('vision')} />
