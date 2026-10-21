@@ -326,7 +326,7 @@ export function OnboardingFlow({ initialInviteCode, initialStep, initialDraft, o
                     {index > 0 && <ThemedText type="small" themeColor="textSecondary">가구원 {index + 1} 이름</ThemedText>}
                     <TextInput
                       style={inputStyle}
-                      placeholder={`가구원 ${index + 1} 이름 (${index === 0 ? '예: 지원' : index === 1 ? '예: 윤혜' : '예: 아이'})`}
+                      placeholder={`가구원 ${index + 1} 이름 (${index === 0 ? '예: 윤혜' : index === 1 ? '예: 지원' : '예: 아이이름'})`}
                       placeholderTextColor="#8B929B"
                       value={name}
                       onChangeText={(text) => setNames((prev) => prev.map((item, itemIndex) => itemIndex === index ? text : item))}
