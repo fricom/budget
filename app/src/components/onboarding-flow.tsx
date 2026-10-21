@@ -290,7 +290,7 @@ export function OnboardingFlow({ initialInviteCode, initialStep, initialDraft, o
             <View style={styles.stepBody}>
               <View style={styles.copyBlock}>
                 <ThemedText type="subtitle" style={styles.stepTitle}>몇 분이 함께 사나요?</ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">가구원은 소비 태깅용으로 최대 5명까지 등록 가능해요. 수입/예산 관리는 처음 등록한 2명으로 제한돼요.</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">가구원은 최대 5명까지 등록할 수 있어요. 지출을 기록할 때 어느 가구원의 지출인지 선택할 수 있어요. 수입과 예산은 처음 등록한 두 명만 관리해요.</ThemedText>
               </View>
               <View style={styles.countGrid}>
                 {[1, 2, 3, 4, 5].map((count) => {
@@ -326,7 +326,7 @@ export function OnboardingFlow({ initialInviteCode, initialStep, initialDraft, o
                     {index > 0 && <ThemedText type="small" themeColor="textSecondary">가구원 {index + 1} 이름</ThemedText>}
                     <TextInput
                       style={inputStyle}
-                      placeholder={`가구원 ${index + 1} 이름 (${index === 0 ? '예: 윤혜' : index === 1 ? '예: 지원' : '예: 아이이름'})`}
+                      placeholder={`가구원 ${index + 1} 이름 (${index === 0 ? '예: 윤혜' : index === 1 ? '예: 지원' : '예: 아이 이름'})`}
                       placeholderTextColor="#8B929B"
                       value={name}
                       onChangeText={(text) => setNames((prev) => prev.map((item, itemIndex) => itemIndex === index ? text : item))}
