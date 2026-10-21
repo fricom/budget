@@ -356,10 +356,10 @@ export function OnboardingFlow({ initialInviteCode, initialStep, initialDraft, o
             <View style={styles.stepBody}>
               <StepCopy
                 title={'우리 가족의 한 달 예상 수입을\n알려주세요'}
-                description="정확하지 않아도 괜찮아요. 매달 들어오는 금액을 대략 입력하면 예산 비율을 제안해드려요. 나중에 수정할 수 있어요."
+                description="필수 입력 · 수입이 있는 가구원 한 명 이상 입력해주세요. 정확하지 않아도 괜찮고, 나중에 수정할 수 있어요."
               />
-              <MoneyField label={`${names[0]?.trim() || '가구원 1'}님의 한 달 예상 수입`} placeholder="예: 4,500,000원" value={draft.income_1} onChangeText={(value) => setMoney('income_1', value)} inputStyle={inputStyle} />
-              {memberCount > 1 && <MoneyField label={`${names[1]?.trim() || '가구원 2'}님의 한 달 예상 수입`} placeholder="예: 3,800,000원" value={draft.income_2} onChangeText={(value) => setMoney('income_2', value)} inputStyle={inputStyle} />}
+              <MoneyField label={`${names[0]?.trim() || '가구원 1'}님의 한 달 예상 수입`} placeholder="예: 3,000,000원" value={draft.income_1} onChangeText={(value) => setMoney('income_1', value)} inputStyle={inputStyle} />
+              {memberCount > 1 && <MoneyField label={`${names[1]?.trim() || '가구원 2'}님의 한 달 예상 수입`} placeholder="예: 2,000,000원" value={draft.income_2} onChangeText={(value) => setMoney('income_2', value)} inputStyle={inputStyle} />}
               <View style={[styles.totalCard, { backgroundColor: theme.primary }]}>
                 <ThemedText style={styles.totalLabel}>우리 가족의 한 달 예상 수입</ThemedText>
                 <ThemedText style={styles.totalAmount}>{formatWon(totalIncome)}</ThemedText>
@@ -371,12 +371,12 @@ export function OnboardingFlow({ initialInviteCode, initialStep, initialDraft, o
 
           {step.name === 'housing' && (
             <View style={styles.stepBody}>
-              <StepCopy title="주거비를 세팅해볼까요?" />
-              <MoneyField label="대출금 (월 상환액)" placeholder="예: 900,000원" value={draft.loan_payment} onChangeText={(value) => setMoney('loan_payment', value)} inputStyle={inputStyle} />
-              <MoneyField label="주거 관리비" placeholder="예: 250,000원" value={draft.housing_fee} onChangeText={(value) => setMoney('housing_fee', value)} inputStyle={inputStyle} />
-              <MoneyField label="통신비" placeholder="예: 130,000원" value={draft.telecom_fee} onChangeText={(value) => setMoney('telecom_fee', value)} inputStyle={inputStyle} />
-              <MoneyField label="재산세 (연 납부액 / 12)" placeholder="예: 40,000원" value={draft.property_tax_monthly} onChangeText={(value) => setMoney('property_tax_monthly', value)} inputStyle={inputStyle} />
-              <ThemedText style={styles.helperText}>재산세는 7월·9월에 나눠 납부해요. 위택스에서 1년 납부 내역을 확인할 수 있어요.</ThemedText>
+              <StepCopy title="주거비를 세팅해볼까요?" description="선택 입력 · 해당하는 항목만 입력해주세요. 없는 항목은 비워두어도 돼요." />
+              <MoneyField label="대출금 월 상환액 (선택)" placeholder="예: 800,000원" value={draft.loan_payment} onChangeText={(value) => setMoney('loan_payment', value)} inputStyle={inputStyle} />
+              <MoneyField label="주거 관리비 (선택)" placeholder="예: 200,000원" value={draft.housing_fee} onChangeText={(value) => setMoney('housing_fee', value)} inputStyle={inputStyle} />
+              <MoneyField label="통신비 (선택)" placeholder="예: 100,000원" value={draft.telecom_fee} onChangeText={(value) => setMoney('telecom_fee', value)} inputStyle={inputStyle} />
+              <MoneyField label="재산세 월 환산액 (선택 · 해당하는 경우만)" placeholder="예: 30,000원" value={draft.property_tax_monthly} onChangeText={(value) => setMoney('property_tax_monthly', value)} inputStyle={inputStyle} />
+              <ThemedText style={styles.helperText}>주택·토지 등을 보유해 재산세를 납부하는 경우에만 입력해주세요. 연간 납부액을 12로 나눈 금액이에요.</ThemedText>
               <ErrorMessage message={error} />
               <NextButton label="다음" busy={busy} theme={theme} onPress={() => saveAndGo('insurance')} />
             </View>
@@ -384,8 +384,8 @@ export function OnboardingFlow({ initialInviteCode, initialStep, initialDraft, o
 
           {step.name === 'insurance' && (
             <View style={styles.stepBody}>
-              <StepCopy title="이제 보험비예요" description="보험비는 나중에 세부항목을 입력해도 돼요. 편하게 월 평균 비용만 입력해주세요!" />
-              <MoneyField label="월 평균 보험비 (가구 전체)" placeholder="예: 350,000원" value={draft.insurance_total} onChangeText={(value) => setMoney('insurance_total', value)} inputStyle={inputStyle} />
+              <StepCopy title="이제 보험비예요" description="선택 입력 · 보험료를 내는 경우 가구 전체의 한 달 금액을 입력해주세요. 비워두고 나중에 추가할 수 있어요." />
+              <MoneyField label="가구 전체 한 달 보험비 (선택)" placeholder="예: 300,000원" value={draft.insurance_total} onChangeText={(value) => setMoney('insurance_total', value)} inputStyle={inputStyle} />
               <ErrorMessage message={error} />
               <NextButton label="고정비 세팅 완료" busy={busy} theme={theme} onPress={() => saveAndGo('vision')} />
             </View>
@@ -409,11 +409,11 @@ export function OnboardingFlow({ initialInviteCode, initialStep, initialDraft, o
 
           {(['living', 'savings', 'pension', 'emergency', 'allowance'] as const).includes(step.name as 'living') && (() => {
             const config = {
-              living: { title: '생활비 세팅', description: '월 평균 생활비를 얼마로 세팅하실 계획인가요? 여유예산의 1/3을 제안드려요.', placeholder: '예: 800,000원', next: 'savings' as const },
-              savings: { title: '저축 세팅', description: '저축을 얼마 목표로 하고 계신가요? 여유예산의 1/3을 제안드려요.', placeholder: '예: 800,000원', next: 'pension' as const },
-              pension: { title: '노후자금 세팅', description: '노후자금은 얼마를 목표로 하고 계신가요? 여유예산의 1/6을 제안드려요.', placeholder: '예: 400,000원', next: 'emergency' as const },
-              emergency: { title: '비상금 세팅', description: '병원비·차량관리·여행비·가족경조사·지인경조사를 비상금에서 관리해요. 여유예산의 1/12을 제안드려요.', placeholder: '예: 200,000원', next: 'allowance' as const },
-              allowance: { title: '용돈 세팅', description: '작고 소중한 내 용돈. 여유예산의 1/12로 잡았어요. 수입을 입력한 2명에게 수입 비례로 기본 배분돼요.', placeholder: '예: 200,000원', next: null },
+              living: { title: '생활비 세팅', description: '제안 금액 · 월 평균 생활비는 여유예산의 1/3을 기준으로 계산했어요. 그대로 사용하거나 조정할 수 있어요.', placeholder: '예: 1,200,000원', next: 'savings' as const },
+              savings: { title: '저축 세팅', description: '제안 금액 · 저축 목표는 여유예산의 1/3을 기준으로 계산했어요. 그대로 사용하거나 조정할 수 있어요.', placeholder: '예: 1,200,000원', next: 'pension' as const },
+              pension: { title: '노후자금 세팅', description: '제안 금액 · 노후자금은 여유예산의 1/6을 기준으로 계산했어요. 그대로 사용하거나 조정할 수 있어요.', placeholder: '예: 600,000원', next: 'emergency' as const },
+              emergency: { title: '비상금 세팅', description: '제안 금액 · 비상금은 여유예산의 1/12을 기준으로 계산했어요. 그대로 사용하거나 조정할 수 있어요.', placeholder: '예: 300,000원', next: 'allowance' as const },
+              allowance: { title: '용돈 세팅', description: '제안 금액 · 용돈은 여유예산의 1/12을 기준으로 계산했어요. 수입을 입력한 2명에게 비례 배분돼요.', placeholder: '예: 300,000원', next: null },
             }[step.name as 'living' | 'savings' | 'pension' | 'emergency' | 'allowance'];
             const key = step.name as 'living' | 'savings' | 'pension' | 'emergency' | 'allowance';
             return (
